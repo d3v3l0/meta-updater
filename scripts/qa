@@ -7,7 +7,7 @@ from os import chdir
 import signal
 
 root = abspath(dirname(dirname(dirname(__file__))))
-print("Root dir is:" + root)
+print(f"Root dir is:{root}")
 
 args = ['bitbake', 'core-image-minimal']
 
@@ -29,10 +29,10 @@ class Runner(object):
         for d in self._dirs:
             chdir(d)
             if exists(join(d, '.qaskip')):
-                print("Skipping %s because of .qaskip file" % d)
+                print(f"Skipping {d} because of .qaskip file")
                 self._results[d] = self.SKIP
                 continue
-            print("Building in " + d)
+            print(f"Building in {d}")
             self._child = Popen(args=args, cwd=d, stdin=PIPE)
             retcode = self._child.wait()
             self._child = None
@@ -40,7 +40,7 @@ class Runner(object):
                 self._results[d] = self.PASS
             else:
                 self._results[d] = self.FAIL
-                print("Error, stopping qa script at %s" % d)
+                print(f"Error, stopping qa script at {d}")
                 break
         for d, result in self._results.items():
             print("%20s %s" % (d, result))

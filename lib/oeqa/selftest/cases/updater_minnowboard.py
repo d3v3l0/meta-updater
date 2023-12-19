@@ -13,12 +13,12 @@ class MinnowTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer_intel, result.output) is None:
             self.meta_intel = metadir() + layer_intel
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_intel)
+            runCmd(f'bitbake-layers add-layer "{self.meta_intel}"')
         else:
             self.meta_intel = None
         if re.search(layer_minnow, result.output) is None:
             self.meta_minnow = metadir() + layer_minnow
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_minnow)
+            runCmd(f'bitbake-layers add-layer "{self.meta_minnow}"')
         else:
             self.meta_minnow = None
         self.append_config('MACHINE = "intel-corei7-64"')
@@ -29,9 +29,9 @@ class MinnowTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_intel:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_intel, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_intel}"', ignore_status=True)
         if self.meta_minnow:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_minnow, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_minnow}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -42,12 +42,17 @@ class MinnowTests(OESelftestTestCase):
         self.assertEqual(retcode, 0, "Unable to check hostname. " +
                          "Is an ssh daemon (such as dropbear or openssh) installed on the device?")
         machine = get_bb_var('MACHINE', 'core-image-minimal')
-        self.assertEqual(stderr, b'', 'Error: ' + stderr.decode())
+        self.assertEqual(stderr, b'', f'Error: {stderr.decode()}')
         # Strip off line ending.
         value = stdout.decode()[:-1]
-        self.assertEqual(value, machine,
-                         'MACHINE does not match hostname: ' + machine + ', ' + value +
-                         '\nIs TianoCore ovmf installed on your host machine?')
+        self.assertEqual(
+            value,
+            machine,
+            (
+                f'MACHINE does not match hostname: {machine}, {value}'
+                + '\nIs TianoCore ovmf installed on your host machine?'
+            ),
+        )
 
         verifyProvisioned(self, machine)
 

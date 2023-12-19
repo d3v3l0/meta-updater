@@ -34,9 +34,12 @@ class RpiTests(OESelftestTestCase):
 
     def tearDownLocal(self):
         if self.meta_upd_rpi:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_upd_rpi, ignore_status=True)
+            runCmd(
+                f'bitbake-layers remove-layer "{self.meta_upd_rpi}"',
+                ignore_status=True,
+            )
         if self.meta_rpi:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_rpi, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_rpi}"', ignore_status=True)
 
     def test_build(self):
         logger = logging.getLogger("selftest")
@@ -47,12 +50,18 @@ class RpiTests(OESelftestTestCase):
         if credentials is None:
             raise unittest.SkipTest("Variable 'SOTA_PACKED_CREDENTIALS' not set.")
         # Check if the file exists.
-        self.assertTrue(os.path.isfile(credentials), "File %s does not exist" % credentials)
+        self.assertTrue(
+            os.path.isfile(credentials), f"File {credentials} does not exist"
+        )
         deploydir = get_bb_var('DEPLOY_DIR_IMAGE')
         imagename = get_bb_var('IMAGE_LINK_NAME', 'core-image-minimal')
         # Check if the credentials are included in the output image.
-        result = runCmd('tar -jtvf %s/%s.tar.bz2 | grep sota_provisioning_credentials.zip' %
-                        (deploydir, imagename), ignore_status=True)
-        self.assertEqual(result.status, 0, "Status not equal to 0. output: %s" % result.output)
+        result = runCmd(
+            f'tar -jtvf {deploydir}/{imagename}.tar.bz2 | grep sota_provisioning_credentials.zip',
+            ignore_status=True,
+        )
+        self.assertEqual(
+            result.status, 0, f"Status not equal to 0. output: {result.output}"
+        )
 
 # vim:set ts=4 sw=4 sts=4 expandtab:
