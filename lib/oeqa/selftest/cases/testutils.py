@@ -60,7 +60,7 @@ def qemu_boot_image(imagename, **kwargs):
 
 
 def qemu_bake_image(imagename):
-    logger.info('Running bitbake to build {}'.format(imagename))
+    logger.info(f'Running bitbake to build {imagename}')
     bitbake(imagename)
 
 
@@ -77,9 +77,7 @@ def metadir():
     # make assumptions by using 'show-layers', but either way, if the
     # layers we need aren't where we expect them, we are out of luck.
     path = os.path.abspath(os.path.dirname(__file__))
-    metadir = path + "/../../../../../"
-
-    return metadir
+    return f"{path}/../../../../../"
 
 
 def akt_native_run(testInst, cmd, **kwargs):
@@ -96,7 +94,9 @@ def akt_native_run(testInst, cmd, **kwargs):
     sysroot = oe.path.join(bb_vars['STAGING_DIR'], bb_vars['BUILD_ARCH'])
 
     result = runCmd(cmd, native_sysroot=sysroot, ignore_status=True, **kwargs)
-    testInst.assertEqual(result.status, 0, "Status not equal to 0. output: %s" % result.output)
+    testInst.assertEqual(
+        result.status, 0, f"Status not equal to 0. output: {result.output}"
+    )
 
 
 def verifyNotProvisioned(testInst, machine):
@@ -108,17 +108,31 @@ def verifyNotProvisioned(testInst, machine):
             ran_ok = True
             break
         sleep(delay)
-    testInst.assertTrue(ran_ok, 'aktualizr-info failed: ' + stderr.decode() + stdout.decode())
+    testInst.assertTrue(
+        ran_ok, f'aktualizr-info failed: {stderr.decode()}{stdout.decode()}'
+    )
 
     # Verify that device has NOT yet provisioned.
-    testInst.assertIn(b'Couldn\'t load device ID', stdout,
-                      'Device already provisioned!? ' + stderr.decode() + stdout.decode())
-    testInst.assertIn(b'Couldn\'t load ECU serials', stdout,
-                      'Device already provisioned!? ' + stderr.decode() + stdout.decode())
-    testInst.assertIn(b'Provisioned on server: no', stdout,
-                      'Device already provisioned!? ' + stderr.decode() + stdout.decode())
-    testInst.assertIn(b'Fetched metadata: no', stdout,
-                      'Device already provisioned!? ' + stderr.decode() + stdout.decode())
+    testInst.assertIn(
+        b'Couldn\'t load device ID',
+        stdout,
+        f'Device already provisioned!? {stderr.decode()}{stdout.decode()}',
+    )
+    testInst.assertIn(
+        b'Couldn\'t load ECU serials',
+        stdout,
+        f'Device already provisioned!? {stderr.decode()}{stdout.decode()}',
+    )
+    testInst.assertIn(
+        b'Provisioned on server: no',
+        stdout,
+        f'Device already provisioned!? {stderr.decode()}{stdout.decode()}',
+    )
+    testInst.assertIn(
+        b'Fetched metadata: no',
+        stdout,
+        f'Device already provisioned!? {stderr.decode()}{stdout.decode()}',
+    )
 
 
 def verifyProvisioned(testInst, machine, hwid=''):
@@ -131,24 +145,53 @@ def verifyProvisioned(testInst, machine, hwid=''):
             ran_ok = True
             break
         sleep(delay)
-    testInst.assertTrue(ran_ok, 'aktualizr-info failed: ' + stderr.decode() + stdout.decode())
+    testInst.assertTrue(
+        ran_ok, f'aktualizr-info failed: {stderr.decode()}{stdout.decode()}'
+    )
     # Then wait for aktualizr to provision.
     if stdout.decode().find('Fetched metadata: yes') < 0:
         stdout, stderr, retcode = testInst.qemu_command('aktualizr-info --wait-until-provisioned')
-        testInst.assertFalse(retcode, 'aktualizr-info failed: ' + stderr.decode() + stdout.decode())
-        testInst.assertEqual(stderr, b'', 'aktualizr-info failed: ' + stderr.decode() + stdout.decode())
-    testInst.assertIn(b'Device ID: ', stdout, 'Provisioning failed: ' + stderr.decode() + stdout.decode())
+        testInst.assertFalse(
+            retcode,
+            f'aktualizr-info failed: {stderr.decode()}{stdout.decode()}',
+        )
+        testInst.assertEqual(
+            stderr,
+            b'',
+            f'aktualizr-info failed: {stderr.decode()}{stdout.decode()}',
+        )
+    testInst.assertIn(
+        b'Device ID: ',
+        stdout,
+        f'Provisioning failed: {stderr.decode()}{stdout.decode()}',
+    )
     if hwid == '':
-        testInst.assertIn(b'Primary ECU hardware ID: ' + machine.encode(), stdout,
-                  'Provisioning failed: ' + stderr.decode() + stdout.decode())
+        testInst.assertIn(
+            b'Primary ECU hardware ID: ' + machine.encode(),
+            stdout,
+            f'Provisioning failed: {stderr.decode()}{stdout.decode()}',
+        )
     else:
-        testInst.assertIn(b'Primary ECU hardware ID: ' + hwid.encode(), stdout,
-                  'Provisioning failed: ' + stderr.decode() + stdout.decode())
-    testInst.assertIn(b'Fetched metadata: yes', stdout, 'Provisioning failed: ' + stderr.decode() + stdout.decode())
+        testInst.assertIn(
+            b'Primary ECU hardware ID: ' + hwid.encode(),
+            stdout,
+            f'Provisioning failed: {stderr.decode()}{stdout.decode()}',
+        )
+    testInst.assertIn(
+        b'Fetched metadata: yes',
+        stdout,
+        f'Provisioning failed: {stderr.decode()}{stdout.decode()}',
+    )
     p = re.compile(r'Device ID: ([a-z0-9-]*)\n')
     m = p.search(stdout.decode())
-    testInst.assertTrue(m, 'Device ID could not be read: ' + stderr.decode() + stdout.decode())
-    testInst.assertGreater(m.lastindex, 0, 'Device ID could not be read: ' + stderr.decode() + stdout.decode())
-    logger.info('Device successfully provisioned with ID: ' + m.group(1))
+    testInst.assertTrue(
+        m, f'Device ID could not be read: {stderr.decode()}{stdout.decode()}'
+    )
+    testInst.assertGreater(
+        m.lastindex,
+        0,
+        f'Device ID could not be read: {stderr.decode()}{stdout.decode()}',
+    )
+    logger.info(f'Device successfully provisioned with ID: {m.group(1)}')
 
 # vim:set ts=4 sw=4 sts=4 expandtab:

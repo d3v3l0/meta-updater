@@ -39,9 +39,9 @@ class OTAImagePlugin(RawCopyPlugin):
         """
         image_dir = get_bitbake_var(image_dir_var)
         if not image_dir:
-            raise WicError("Couldn't find %s, exiting" % image_dir_var)
+            raise WicError(f"Couldn't find {image_dir_var}, exiting")
 
-        image_file = image_dir + "/" + get_bitbake_var("IMAGE_LINK_NAME") + ".ota-ext4"
+        image_file = f"{image_dir}/" + get_bitbake_var("IMAGE_LINK_NAME") + ".ota-ext4"
         return image_file if os.path.exists(image_file) else ""
 
     @classmethod
@@ -59,7 +59,7 @@ class OTAImagePlugin(RawCopyPlugin):
         if not src:
             raise WicError("Couldn't find ota image in IMGDEPLOYDIR or DEPLOY_DIR_IMAGE, exiting")
 
-        logger.debug('Preparing partition using image %s' % (src))
+        logger.debug(f'Preparing partition using image {src}')
         source_params['file'] = src
 
         super(OTAImagePlugin, cls).do_prepare_partition(part, source_params,

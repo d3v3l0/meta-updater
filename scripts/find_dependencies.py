@@ -5,7 +5,7 @@ import os.path
 import sys
 
 scripts_path = os.path.dirname(os.path.realpath(__file__))
-bb_lib_path = os.path.abspath(scripts_path + '/../../poky/bitbake/lib')
+bb_lib_path = os.path.abspath(f'{scripts_path}/../../poky/bitbake/lib')
 sys.path = sys.path + [bb_lib_path]
 
 import bb.fetch2
@@ -40,10 +40,10 @@ def get_recipe_info(tinfoil, rn):
     try:
         info = tinfoil.get_recipe_info(rn)
     except Exception:
-        print('Failed to get recipe info for: %s' % rn)
+        print(f'Failed to get recipe info for: {rn}')
         return []
     if not info:
-        print('No recipe info found for: %s' % rn)
+        print(f'No recipe info found for: {rn}')
         return []
     append_files = tinfoil.get_file_appends(info.fn)
     appends = True
@@ -99,10 +99,10 @@ def print_package(manifest_file, data, is_project):
             manifest_file.write('  - "%s"\n' % local)
         else:
             manifest_file.write('  - "%s"\n' % src)
-            if src_type != 'http' and src_type != 'https' and src_type != 'ftp' and src_type != 'ssh':
+            if src_type not in ['http', 'https', 'ftp', 'ssh']:
                 repos.append(src)
     if len(repos) > 1:
-        print('Multiple repos for one package are not supported. Package: %s' % info.pn)
+        print(f'Multiple repos for one package are not supported. Package: {info.pn}')
     for repo in repos:
         vcs_type, url = repo.split('://', maxsplit=1)
         manifest_file.write('  vcs:\n')
@@ -118,18 +118,13 @@ def print_package(manifest_file, data, is_project):
 
 def find_dependencies(manifest_file, tinfoil, assume_provided, recipe_info, packages, rn, order):
     data = recipe_info[rn]
-    # Filter out packages from the assume_provided list.
-    depends = []
-    for dep in data.depends:
-        if dep not in assume_provided:
-            depends.append(dep)
-
+    depends = [dep for dep in data.depends if dep not in assume_provided]
     if PRINT_PROGRESS:
         # Print high-order dependencies as a form of logging/progress notifcation.
         if order == 2:
             print(rn)
         if order == 3:
-            print('  ' + rn)
+            print(f'  {rn}')
 
     # order == 1 is for the initial recipe. We've already printed its
     # information, so skip it.
@@ -180,7 +175,7 @@ def main():
             print('Nothing to do!')
             return
 
-        with open(rn + '-dependencies.yml', "w") as manifest_file:
+        with open(f'{rn}-dependencies.yml', "w") as manifest_file:
             manifest_file.write('project:\n')
             data.depends = []
             depends = data.getVar('DEPENDS').split()

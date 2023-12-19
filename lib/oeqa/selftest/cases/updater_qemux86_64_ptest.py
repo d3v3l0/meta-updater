@@ -13,7 +13,7 @@ class PtestTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -26,7 +26,7 @@ class PtestTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command, timeout=60):
         return qemu_send_command(self.qemu.ssh_port, command, timeout=timeout)

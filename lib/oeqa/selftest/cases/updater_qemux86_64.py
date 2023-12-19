@@ -28,13 +28,19 @@ class GeneralTests(OESelftestTestCase):
         if credentials is None:
             raise unittest.SkipTest("Variable 'SOTA_PACKED_CREDENTIALS' not set.")
         # Check if the file exists
-        self.assertTrue(os.path.isfile(credentials), "File %s does not exist" % credentials)
+        self.assertTrue(
+            os.path.isfile(credentials), f"File {credentials} does not exist"
+        )
         deploydir = get_bb_var('DEPLOY_DIR_IMAGE')
         imagename = get_bb_var('IMAGE_LINK_NAME', 'core-image-minimal')
         # Check if the credentials are included in the output image
-        result = runCmd('tar -jtvf %s/%s.tar.bz2 | grep sota_provisioning_credentials.zip' %
-                        (deploydir, imagename), ignore_status=True)
-        self.assertEqual(result.status, 0, "Status not equal to 0. output: %s" % result.output)
+        result = runCmd(
+            f'tar -jtvf {deploydir}/{imagename}.tar.bz2 | grep sota_provisioning_credentials.zip',
+            ignore_status=True,
+        )
+        self.assertEqual(
+            result.status, 0, f"Status not equal to 0. output: {result.output}"
+        )
 
 
 class AktualizrToolsTests(OESelftestTestCase):
@@ -61,15 +67,30 @@ class AktualizrToolsTests(OESelftestTestCase):
                        .format(creds=creds, temp=temp_dir, config=config))
 
         # Might be nice if these names weren't hardcoded.
-        cert_path = temp_dir + '/var/sota/import/client.pem'
-        self.assertTrue(os.path.isfile(cert_path), "Client certificate not found at %s." % cert_path)
-        self.assertTrue(os.path.getsize(cert_path) > 0, "Client certificate at %s is empty." % cert_path)
-        pkey_path = temp_dir + '/var/sota/import/pkey.pem'
-        self.assertTrue(os.path.isfile(pkey_path), "Private key not found at %s." % pkey_path)
-        self.assertTrue(os.path.getsize(pkey_path) > 0, "Private key at %s is empty." % pkey_path)
-        ca_path = temp_dir + '/var/sota/import/root.crt'
-        self.assertTrue(os.path.isfile(ca_path), "Client certificate not found at %s." % ca_path)
-        self.assertTrue(os.path.getsize(ca_path) > 0, "Client certificate at %s is empty." % ca_path)
+        cert_path = f'{temp_dir}/var/sota/import/client.pem'
+        self.assertTrue(
+            os.path.isfile(cert_path),
+            f"Client certificate not found at {cert_path}.",
+        )
+        self.assertTrue(
+            os.path.getsize(cert_path) > 0,
+            f"Client certificate at {cert_path} is empty.",
+        )
+        pkey_path = f'{temp_dir}/var/sota/import/pkey.pem'
+        self.assertTrue(
+            os.path.isfile(pkey_path), f"Private key not found at {pkey_path}."
+        )
+        self.assertTrue(
+            os.path.getsize(pkey_path) > 0, f"Private key at {pkey_path} is empty."
+        )
+        ca_path = f'{temp_dir}/var/sota/import/root.crt'
+        self.assertTrue(
+            os.path.isfile(ca_path), f"Client certificate not found at {ca_path}."
+        )
+        self.assertTrue(
+            os.path.getsize(ca_path) > 0,
+            f"Client certificate at {ca_path} is empty.",
+        )
 
 
 class SharedCredProvTests(OESelftestTestCase):
@@ -79,7 +100,7 @@ class SharedCredProvTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -91,7 +112,7 @@ class SharedCredProvTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -102,11 +123,12 @@ class SharedCredProvTests(OESelftestTestCase):
         self.assertEqual(retcode, 0, "Unable to check hostname. " +
                          "Is an ssh daemon (such as dropbear or openssh) installed on the device?")
         machine = get_bb_var('MACHINE', 'core-image-minimal')
-        self.assertEqual(stderr, b'', 'Error: ' + stderr.decode())
+        self.assertEqual(stderr, b'', f'Error: {stderr.decode()}')
         # Strip off line ending.
         value = stdout.decode()[:-1]
-        self.assertEqual(value, machine,
-                         'MACHINE does not match hostname: ' + machine + ', ' + value)
+        self.assertEqual(
+            value, machine, f'MACHINE does not match hostname: {machine}, {value}'
+        )
 
         hwid = get_bb_var('SOTA_HARDWARE_ID')
         verifyProvisioned(self, machine, hwid)
@@ -119,7 +141,7 @@ class SharedCredProvTestsNonOSTree(SharedCredProvTests):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -144,7 +166,7 @@ class ManualControlTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -156,7 +178,7 @@ class ManualControlTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -167,14 +189,20 @@ class ManualControlTests(OESelftestTestCase):
         """
         sleep(20)
         stdout, stderr, retcode = self.qemu_command('aktualizr-info')
-        self.assertIn(b'Can\'t open database', stderr,
-                      'Aktualizr should not have run yet' + stderr.decode() + stdout.decode())
+        self.assertIn(
+            b'Can\'t open database',
+            stderr,
+            f'Aktualizr should not have run yet{stderr.decode()}{stdout.decode()}',
+        )
 
         stdout, stderr, retcode = self.qemu_command('aktualizr once')
 
         stdout, stderr, retcode = self.qemu_command('aktualizr-info')
-        self.assertIn(b'Fetched metadata: yes', stdout,
-                      'Aktualizr should have run' + stderr.decode() + stdout.decode())
+        self.assertIn(
+            b'Fetched metadata: yes',
+            stdout,
+            f'Aktualizr should have run{stderr.decode()}{stdout.decode()}',
+        )
 
 
 class DeviceCredProvTests(OESelftestTestCase):
@@ -184,7 +212,7 @@ class DeviceCredProvTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -197,7 +225,7 @@ class DeviceCredProvTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -208,11 +236,12 @@ class DeviceCredProvTests(OESelftestTestCase):
         self.assertEqual(retcode, 0, "Unable to check hostname. " +
                          "Is an ssh daemon (such as dropbear or openssh) installed on the device?")
         machine = get_bb_var('MACHINE', 'core-image-minimal')
-        self.assertEqual(stderr, b'', 'Error: ' + stderr.decode())
+        self.assertEqual(stderr, b'', f'Error: {stderr.decode()}')
         # Strip off line ending.
         value = stdout.decode()[:-1]
-        self.assertEqual(value, machine,
-                         'MACHINE does not match hostname: ' + machine + ', ' + value)
+        self.assertEqual(
+            value, machine, f'MACHINE does not match hostname: {machine}, {value}'
+        )
 
         verifyNotProvisioned(self, machine)
 
@@ -236,7 +265,7 @@ class DeviceCredProvHsmTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -251,7 +280,7 @@ class DeviceCredProvHsmTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -262,11 +291,12 @@ class DeviceCredProvHsmTests(OESelftestTestCase):
         self.assertEqual(retcode, 0, "Unable to check hostname. " +
                          "Is an ssh daemon (such as dropbear or openssh) installed on the device?")
         machine = get_bb_var('MACHINE', 'core-image-minimal')
-        self.assertEqual(stderr, b'', 'Error: ' + stderr.decode())
+        self.assertEqual(stderr, b'', f'Error: {stderr.decode()}')
         # Strip off line ending.
         value = stdout.decode()[:-1]
-        self.assertEqual(value, machine,
-                         'MACHINE does not match hostname: ' + machine + ', ' + value)
+        self.assertEqual(
+            value, machine, f'MACHINE does not match hostname: {machine}, {value}'
+        )
 
         verifyNotProvisioned(self, machine)
 
@@ -298,8 +328,9 @@ class DeviceCredProvHsmTests(OESelftestTestCase):
                     b'X.509 cert' in p11_out and b'present token' in p11_err):
                 break
         else:
-            self.fail('pkcs11-tool or softhsm2-tool failed: ' + p11_err.decode() +
-                      p11_out.decode() + hsm_err.decode() + hsm_out.decode())
+            self.fail(
+                f'pkcs11-tool or softhsm2-tool failed: {p11_err.decode()}{p11_out.decode()}{hsm_err.decode()}{hsm_out.decode()}'
+            )
 
         self.assertIn(b'Initialized:      yes', hsm_out, 'softhsm2-tool failed: ' +
                       hsm_err.decode() + hsm_out.decode())
@@ -309,12 +340,18 @@ class DeviceCredProvHsmTests(OESelftestTestCase):
         # Check that pkcs11 output matches sofhsm output.
         p11_p = re.compile(r'Using slot [0-9] with a present token \((0x[0-9a-f]*)\)\s')
         p11_m = p11_p.search(p11_err.decode())
-        self.assertTrue(p11_m, 'Slot number not found with pkcs11-tool: ' + p11_err.decode() + p11_out.decode())
+        self.assertTrue(
+            p11_m,
+            f'Slot number not found with pkcs11-tool: {p11_err.decode()}{p11_out.decode()}',
+        )
         self.assertGreater(p11_m.lastindex, 0, 'Slot number not found with pkcs11-tool: ' +
                            p11_err.decode() + p11_out.decode())
         hsm_p = re.compile(r'Description:\s*SoftHSM slot ID (0x[0-9a-f]*)\s')
         hsm_m = hsm_p.search(hsm_out.decode())
-        self.assertTrue(hsm_m, 'Slot number not found with softhsm2-tool: ' + hsm_err.decode() + hsm_out.decode())
+        self.assertTrue(
+            hsm_m,
+            f'Slot number not found with softhsm2-tool: {hsm_err.decode()}{hsm_out.decode()}',
+        )
         self.assertGreater(hsm_m.lastindex, 0, 'Slot number not found with softhsm2-tool: ' +
                            hsm_err.decode() + hsm_out.decode())
         self.assertEqual(p11_m.group(1), hsm_m.group(1), 'Slot number does not match: ' +
@@ -357,7 +394,9 @@ class IpSecondaryTests(OESelftestTestCase):
         def wait_till_sshable(self):
             # qemu_send_command tries to ssh into the qemu VM and blocks until it gets there or timeout happens
             # so it helps us to block q control flow until the VM is booted and a target binary/daemon is running there
-            self.stdout, self.stderr, self.retcode = self.send_command(self.binaryname + ' --help', timeout=300)
+            self.stdout, self.stderr, self.retcode = self.send_command(
+                f'{self.binaryname} --help', timeout=300
+            )
 
         def was_successfully_booted(self):
             return self.retcode == 0
@@ -372,8 +411,8 @@ class IpSecondaryTests(OESelftestTestCase):
                                                              secondary_network=True)
 
         def configure(self):
-            self._test_ctx.append_config('SECONDARY_SERIAL_ID = "{}"'.format(self.sndry_serial))
-            self._test_ctx.append_config('SECONDARY_HARDWARE_ID = "{}"'.format(self.sndry_hw_id))
+            self._test_ctx.append_config(f'SECONDARY_SERIAL_ID = "{self.sndry_serial}"')
+            self._test_ctx.append_config(f'SECONDARY_HARDWARE_ID = "{self.sndry_hw_id}"')
 
     class Primary(Image):
         def __init__(self, test_ctx):
@@ -387,7 +426,10 @@ class IpSecondaryTests(OESelftestTestCase):
         def is_ecu_registered(self, ecu_id):
             device_status = self.get_info()
 
-            if not ((device_status.find(ecu_id[0]) != -1) and (device_status.find(ecu_id[1]) != -1)):
+            if (
+                device_status.find(ecu_id[0]) == -1
+                or device_status.find(ecu_id[1]) == -1
+            ):
                 return False
             not_registered_field = "Removed or not registered ecus:"
             not_reg_start = device_status.find(not_registered_field)
@@ -395,7 +437,9 @@ class IpSecondaryTests(OESelftestTestCase):
 
         def get_info(self):
             stdout, stderr, retcode = self.send_command('aktualizr-info --wait-until-provisioned', timeout=620)
-            self._test_ctx.assertEqual(retcode, 0, 'Unable to run aktualizr-info: {}'.format(stderr))
+            self._test_ctx.assertEqual(
+                retcode, 0, f'Unable to run aktualizr-info: {stderr}'
+            )
             return stdout
 
     def setUpLocal(self):
@@ -403,7 +447,7 @@ class IpSecondaryTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
 
@@ -413,31 +457,43 @@ class IpSecondaryTests(OESelftestTestCase):
 
     def tearDownLocal(self):
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def test_ip_secondary_registration_if_secondary_starts_first(self):
         with self.secondary:
-            self.assertTrue(self.secondary.was_successfully_booted(),
-                            'The secondary failed to boot: {}'.format(self.secondary.stderr))
+            self.assertTrue(
+                self.secondary.was_successfully_booted(),
+                f'The secondary failed to boot: {self.secondary.stderr}',
+            )
 
             with self.primary:
-                self.assertTrue(self.primary.was_successfully_booted(),
-                                'The primary failed to boot: {}'.format(self.primary.stderr))
+                self.assertTrue(
+                    self.primary.was_successfully_booted(),
+                    f'The primary failed to boot: {self.primary.stderr}',
+                )
 
-                self.assertTrue(self.primary.is_ecu_registered(self.secondary.id),
-                                "The secondary wasn't registered at the primary: {}".format(self.primary.get_info()))
+                self.assertTrue(
+                    self.primary.is_ecu_registered(self.secondary.id),
+                    f"The secondary wasn't registered at the primary: {self.primary.get_info()}",
+                )
 
     def test_ip_secondary_registration_if_primary_starts_first(self):
         with self.primary:
-            self.assertTrue(self.primary.was_successfully_booted(),
-                            'The primary failed to boot: {}'.format(self.primary.stderr))
+            self.assertTrue(
+                self.primary.was_successfully_booted(),
+                f'The primary failed to boot: {self.primary.stderr}',
+            )
 
             with self.secondary:
-                self.assertTrue(self.secondary.was_successfully_booted(),
-                                'The secondary failed to boot: {}'.format(self.secondary.stderr))
+                self.assertTrue(
+                    self.secondary.was_successfully_booted(),
+                    f'The secondary failed to boot: {self.secondary.stderr}',
+                )
 
-                self.assertTrue(self.primary.is_ecu_registered(self.secondary.id),
-                                "The secondary wasn't registered at the primary: {}".format(self.primary.get_info()))
+                self.assertTrue(
+                    self.primary.is_ecu_registered(self.secondary.id),
+                    f"The secondary wasn't registered at the primary: {self.primary.get_info()}",
+                )
 
 
 class ResourceControlTests(OESelftestTestCase):
@@ -446,7 +502,7 @@ class ResourceControlTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -461,7 +517,7 @@ class ResourceControlTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -497,7 +553,7 @@ class NonSystemdTests(OESelftestTestCase):
         result = runCmd('bitbake-layers show-layers')
         if re.search(layer, result.output) is None:
             self.meta_qemu = metadir() + layer
-            runCmd('bitbake-layers add-layer "%s"' % self.meta_qemu)
+            runCmd(f'bitbake-layers add-layer "{self.meta_qemu}"')
         else:
             self.meta_qemu = None
         self.append_config('MACHINE = "qemux86-64"')
@@ -510,7 +566,7 @@ class NonSystemdTests(OESelftestTestCase):
     def tearDownLocal(self):
         qemu_terminate(self.s)
         if self.meta_qemu:
-            runCmd('bitbake-layers remove-layer "%s"' % self.meta_qemu, ignore_status=True)
+            runCmd(f'bitbake-layers remove-layer "{self.meta_qemu}"', ignore_status=True)
 
     def qemu_command(self, command):
         return qemu_send_command(self.qemu.ssh_port, command)
@@ -518,10 +574,15 @@ class NonSystemdTests(OESelftestTestCase):
     def test_provisioning(self):
         print('Checking if systemd is not installed...')
         stdout, stderr, retcode = self.qemu_command('systemctl')
-        self.assertTrue(retcode != 0, 'systemd is installed while it is not supposed to: ' + str(stdout))
+        self.assertTrue(
+            retcode != 0,
+            f'systemd is installed while it is not supposed to: {str(stdout)}',
+        )
 
         stdout, stderr, retcode = self.qemu_command('aktualizr --run-mode once')
-        self.assertEqual(retcode, 0, 'Failed to run aktualizr: ' + str(stdout) + str(stderr))
+        self.assertEqual(
+            retcode, 0, f'Failed to run aktualizr: {str(stdout)}{str(stderr)}'
+        )
 
         machine = get_bb_var('MACHINE', 'core-image-minimal')
         verifyProvisioned(self, machine)

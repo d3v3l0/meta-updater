@@ -32,10 +32,9 @@ def random_mac():
     """Return a random Ethernet MAC address
     @link https://www.iana.org/assignments/ethernet-numbers/ethernet-numbers.xhtml#ethernet-numbers-2
     """
-    head = "ca:fe:"
     hex_digits = '0123456789abcdef'
     tail = ':'.join([random.choice(hex_digits) + random.choice(hex_digits) for _ in range(4)])
-    return head + tail
+    return f"ca:fe:{tail}"
 
 
 class QemuCommand(object):
@@ -63,12 +62,16 @@ class QemuCommand(object):
             self.machine = args.machine
         else:
             if not isdir(args.dir):
-                raise ValueError("Directory %s does not exist, please specify a --machine or a valid images directory" % args.dir)
+                raise ValueError(
+                    f"Directory {args.dir} does not exist, please specify a --machine or a valid images directory"
+                )
             machines = listdir(args.dir)
             if len(machines) == 1:
                 self.machine = machines[0]
             else:
-                raise ValueError("Could not autodetect machine type. More than one entry in %s. Maybe --machine qemux86-64?" % args.dir)
+                raise ValueError(
+                    f"Could not autodetect machine type. More than one entry in {args.dir}. Maybe --machine qemux86-64?"
+                )
 
         # If using an overlay with U-Boot, copy the rom when we create the
         # overlay so that we can keep it around just in case.
@@ -80,18 +83,20 @@ class QemuCommand(object):
             else:
                 uboot_path = abspath(join(args.dir, self.machine, 'u-boot-qemux86-64.rom'))
             if self.overlay:
-                new_uboot_path = self.overlay + '.u-boot.rom'
+                new_uboot_path = f'{self.overlay}.u-boot.rom'
                 if not exists(self.overlay):
                     if not exists(uboot_path):
-                        raise ValueError("U-Boot image %s does not exist" % uboot_path)
+                        raise ValueError(f"U-Boot image {uboot_path} does not exist")
                     if not exists(new_uboot_path):
                         if self.dry_run:
-                            print("cp %s %s" % (uboot_path, new_uboot_path))
+                            print(f"cp {uboot_path} {new_uboot_path}")
                         else:
                             copyfile(uboot_path, new_uboot_path)
                 uboot_path = new_uboot_path
-            if not exists(uboot_path) and not (self.dry_run and not exists(self.overlay)):
-                raise ValueError("U-Boot image %s does not exist" % uboot_path)
+            if not exists(uboot_path) and (
+                not self.dry_run or exists(self.overlay)
+            ):
+                raise ValueError(f"U-Boot image {uboot_path} does not exist")
             self.bios = uboot_path
         else:
             self.kernel = abspath(join(args.dir, self.machine, 'bzImage-qemux86-64.bin'))
@@ -104,33 +109,27 @@ class QemuCommand(object):
             image = realpath(args.imagename)
         else:
             ext = EXTENSIONS.get(self.machine, 'wic')
-            image = join(args.dir, self.machine, '%s-%s.%s' % (args.imagename, self.machine, ext))
+            image = join(args.dir, self.machine, f'{args.imagename}-{self.machine}.{ext}')
         if self.overlay:
-            new_image_path = self.overlay + '.img'
+            new_image_path = f'{self.overlay}.img'
             if not exists(self.overlay):
                 if not exists(image):
-                    raise ValueError("OS image %s does not exist" % image)
+                    raise ValueError(f"OS image {image} does not exist")
                 if not exists(new_image_path):
                     if self.dry_run:
-                        print("cp %s %s" % (image, new_image_path))
+                        print(f"cp {image} {new_image_path}")
                     else:
                         copyfile(image, new_image_path)
             self.image = new_image_path
         else:
             self.image = realpath(image)
-        if not exists(self.image) and not (self.dry_run and not exists(self.overlay)):
-            raise ValueError("OS image %s does not exist" % self.image)
+        if not exists(self.image) and (not self.dry_run or exists(self.overlay)):
+            raise ValueError(f"OS image {self.image} does not exist")
 
-        if args.mac:
-            self.mac_address = args.mac
-        else:
-            self.mac_address = random_mac()
+        self.mac_address = args.mac if args.mac else random_mac()
         self.serial_port = find_local_port(8990)
         self.ssh_port = find_local_port(2222)
-        if args.mem:
-            self.mem = args.mem
-        else:
-            self.mem = "1G"
+        self.mem = args.mem if args.mem else "1G"
         if args.kvm is None:
             # Autodetect KVM using 'kvm-ok'
             try:
@@ -154,7 +153,7 @@ class QemuCommand(object):
         if self.gdb:
             netuser += ',hostfwd=tcp:0.0.0.0:2159-:2159'
         if self.host_fwd:
-            netuser += ",hostfwd=" + self.host_fwd
+            netuser += f",hostfwd={self.host_fwd}"
 
         cmdline = [
             "qemu-system-x86_64",
@@ -165,21 +164,32 @@ class QemuCommand(object):
             cmdline += ["-kernel", self.kernel]
 
         if not self.overlay:
-            cmdline += ["-drive", "file=%s,if=%s,format=raw,snapshot=on" % (self.image, self.drive_interface)]
+            cmdline += [
+                "-drive",
+                f"file={self.image},if={self.drive_interface},format=raw,snapshot=on",
+            ]
         cmdline += [
-            "-serial", "tcp:127.0.0.1:%d,server,nowait" % self.serial_port,
-            "-m", self.mem,
-            "-object", "rng-random,id=rng0,filename=/dev/urandom",
-            "-device", "virtio-rng-pci,rng=rng0",
-            "-net", netuser,
-            "-net", "nic,macaddr=%s" % self.mac_address
+            "-serial",
+            "tcp:127.0.0.1:%d,server,nowait" % self.serial_port,
+            "-m",
+            self.mem,
+            "-object",
+            "rng-random,id=rng0,filename=/dev/urandom",
+            "-device",
+            "virtio-rng-pci,rng=rng0",
+            "-net",
+            netuser,
+            "-net",
+            f"nic,macaddr={self.mac_address}",
         ]
         if self.pcap:
-            cmdline += ['-net', 'dump,file=' + self.pcap]
+            cmdline += ['-net', f'dump,file={self.pcap}']
         if self.secondary_network:
             cmdline += [
-                '-netdev', 'socket,id=vlan1,mcast=230.0.0.1:1234,localaddr=127.0.0.1',
-                '-device', 'e1000,netdev=vlan1,mac='+random_mac(),
+                '-netdev',
+                'socket,id=vlan1,mcast=230.0.0.1:1234,localaddr=127.0.0.1',
+                '-device',
+                f'e1000,netdev=vlan1,mac={random_mac()}',
             ]
         if self.gui:
             cmdline += [
@@ -193,10 +203,7 @@ class QemuCommand(object):
                     "-nographic",
                     "-monitor", "null",
             ]
-        if self.kvm:
-            cmdline += ['-enable-kvm', '-cpu', 'host']
-        else:
-            cmdline += ['-cpu', 'Haswell']
+        cmdline += ['-enable-kvm', '-cpu', 'host'] if self.kvm else ['-cpu', 'Haswell']
         if self.overlay:
             cmdline.append(self.overlay)
 
@@ -206,9 +213,12 @@ class QemuCommand(object):
         return cmdline
 
     def img_command_line(self):
-        cmdline = [
-            "qemu-img", "create",
-            "-o", "backing_file=%s" % self.image,
-            "-f", "qcow2",
-            self.overlay]
-        return cmdline
+        return [
+            "qemu-img",
+            "create",
+            "-o",
+            f"backing_file={self.image}",
+            "-f",
+            "qcow2",
+            self.overlay,
+        ]
